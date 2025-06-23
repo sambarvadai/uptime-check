@@ -1,6 +1,7 @@
 require('dotenv').config();
 console.log('CONNECTING TO:', process.env.DATABASE_URL);
 const {Pool} = require('pg');
+const bcrypt = require('bcrypt');
 const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
 });
@@ -69,10 +70,29 @@ async function deleteMonitorById(id,userId){
     );
     return rowCount > 0;
 }
+async function createUser({username,password}){
+    const hashedPwd = await bcrypt.hash(password, 10);
+    const {rows} = await pool.query(
+        `INSERT INTO users ( username,hashedPwd)
+        VALUES ($1, $2)
+        RETURNING id,username,created_at`,
+        [username,hashedPwd]
+    );
+    return rows[0];
+}
+async function getUserByUsername(username){
+const {rows} = await pool.query(
+    `SELECT * from users where username = $1`,
+    [username]
+);
+return rows[0] || null;
+}
 module.exports = {
     createNewMonitor,
     getMonitorById,
     getAllMonitors,
     updateMonitorById,
     deleteMonitorById, // Exporting pool if needed elsewhere
+    createUser,
+    getUserByUsername,
 };
