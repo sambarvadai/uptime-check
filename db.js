@@ -73,7 +73,7 @@ async function deleteMonitorById(id,userId){
 async function createUser({username,password}){
     const hashedPwd = await bcrypt.hash(password, 10);
     const {rows} = await pool.query(
-        `INSERT INTO users ( username,hashedPwd)
+        `INSERT INTO users ( username,password_hash)
         VALUES ($1, $2)
         RETURNING id,username,created_at`,
         [username,hashedPwd]
@@ -88,6 +88,7 @@ const {rows} = await pool.query(
 return rows[0] || null;
 }
 module.exports = {
+    pool,
     createNewMonitor,
     getMonitorById,
     getAllMonitors,
