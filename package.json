@@ -2,9 +2,10 @@
   "name": "uptime-check",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "parcel ./view/index.html --no-cache",
+    "dev": "node scripts/dev.js"
   },
   "keywords": [],
   "author": "",
@@ -15,8 +16,17 @@
     "bcrypt": "^6.0.0",
     "dotenv": "^16.5.0",
     "express": "^5.1.0",
+    "express-rate-limit": "^8.2.1",
+    "express-validator": "^7.2.1",
     "jsonwebtoken": "^9.0.2",
     "node-cron": "^4.1.1",
-    "pg": "^8.16.2"
+    "parcel": "^2.15.4",
+    "pg": "^8.16.2",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "react-router": "^7.6.3"
+  },
+  "devDependencies": {
+    "buffer": "^6.0.3"
   }
 }

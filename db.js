@@ -1,24 +1,26 @@
 require('dotenv').config();
-console.log('CONNECTING TO:', process.env.DATABASE_URL);
 const {Pool} = require('pg');
 const bcrypt = require('bcrypt');
 const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
 });
-async function createNewMonitor({userId,url,interval,name,statusCodes}){
-const {rows} = await pool.query(
-`INSERT INTO monitors (user_id,url,interval,name,status_codes)
-VALUES ($1, $2, $3, $4, $5)
-RETURNING *`,
-[
-    userId,
-    url,
-    interval,
-    name || null,
-    Array.isArray(statusCodes)&&statusCodes.length ? statusCodes: [200],
-]
-);
-return rows[0];
+async function createNewMonitor({userId, url, interval, name, statusCodes, method, headers, body}){
+    const {rows} = await pool.query(
+        `INSERT INTO monitors (user_id, url, interval, name, status_codes, method, headers, body)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+        RETURNING *`,
+        [
+            userId,
+            url,
+            interval,
+            name || null,
+            Array.isArray(statusCodes) && statusCodes.length ? statusCodes : [200],
+            method || 'GET',
+            headers || {},
+            body || null,
+        ]
+    );
+    return rows[0];
 }
 async function getMonitorById(id,userId){
     const {rows} = await pool.query(
@@ -29,8 +31,23 @@ async function getMonitorById(id,userId){
 }
 async function getAllMonitors(userid){
     const {rows} = await pool.query(
-        `SELECT * from monitors where user_id = $1
-        ORDER BY created_at DESC`,
+        `SELECT
+            m.*,
+            mc.checked_at AS last_ping_at,
+            mc.up_status AS last_up,
+            mc.status_code AS last_status_code,
+            mc.response_time AS last_response_time,
+            mc.error AS last_error
+        FROM monitors m
+        LEFT JOIN LATERAL (
+            SELECT *
+            FROM monitor_checks
+            WHERE monitor_id = m.id
+            ORDER BY checked_at DESC
+            LIMIT 1
+        ) mc ON TRUE
+        WHERE m.user_id = $1
+        ORDER BY m.created_at DESC`,
         [userid]
     );
     return rows;
@@ -41,9 +58,12 @@ async function updateMonitorById(id,userid, updates){
     let idx = 1;
     const colMap = {
         url: 'url',
-        name:'name',
+        name: 'name',
         interval: 'interval',
-        statusCodes:'status_codes',
+        statusCodes: 'status_codes',
+        method: 'method',
+        headers: 'headers',
+        body: 'body',
     };
     for(let key of Object.keys(updates)){
         if(colMap[key]){
